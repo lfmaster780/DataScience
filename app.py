@@ -257,17 +257,18 @@ def rankingProdutosMenor(data):
         soma = sum(lista)
         valVendas.append(soma)
 
-    dataFrame = pd.DataFrame({"Produto":list(produtos),"Rentabilidade":valVendas})
+    dataFrame = pd.DataFrame({"Produto":list(produtos),"Valor Vendas":valVendas})
     dataFrame = dataFrame.sort_values(['Valor Vendas','Produto'], ascending=True)
-    st.write("Ranking Geral (Menor para o Maior)")
-    sns.barplot(data = dataFrame, x="Rentabilidade", y="Produto", estimator = np.sum, palette="tab10")
+
+    st.write("Ranking Geral (Maior para o Menor)")
+    sns.barplot(data = dataFrame, x="Valor Vendas", y="Produto", estimator = np.sum, palette="tab10")
     st.pyplot()
     st.write(dataFrame)
 
     loj = ["R1296", "BA7783", "JP8825", "RG7742", "AL1312", "GA7751", "JB6325"]
     for loja in loj:
         datL = dats.loc[dats["Loja"] == loja]
-        st.write("Ranking Loja -> ",str(loja))
+
         valVendas = []
         for prod in produtos:
             datP = datL.loc[datL["Produto"] == prod]
@@ -275,16 +276,18 @@ def rankingProdutosMenor(data):
             soma = sum(lista)
             valVendas.append(soma)
 
+        st.write("Raanking Loja -> ",str(loja))
         dataFrame = pd.DataFrame({"Produto":list(produtos),"Valor Vendas":valVendas})
         dataFrame = dataFrame.sort_values(['Valor Vendas','Produto'], ascending=True)
         sns.barplot(data = dataFrame, x="Valor Vendas", y="Produto", estimator = np.sum, palette="tab10")
         plt.title("Ranking Loja -> "+str(loja))
         st.pyplot()
-
         st.write(dataFrame)
+
 
 def valorVendasLoja(data):
     st.write("Ranking Vendas por Loja (Em reais)")
+
     dic = {"Produto":data["Produto"], "Ano":data["Ano"],"ValorVenda":[],"Fabricante":data["Fabricante"],"Loja":data["Loja"]}
 
     valores = data["ValorVenda"]
@@ -348,55 +351,75 @@ def vendedorLoja(data):
         st.pyplot()
 
 def rankingRentaveis(data):
-    st.write("Ranking Produtos Geral")
-    dic = {"Produto":data["Produto"], "Ano":data["Ano"],"ValorVenda":[],"Fabricante":data["Fabricante"],"Loja":data["Loja"]}
+    st.write("Ranking Rentáveis (Valor Venda - Preço Custo)")
+
+    dic = {"Produto":data["Produto"], "Ano":data["Ano"],"ValorVenda":[],"Fabricante":data["Fabricante"],"Loja":data["Loja"],"Custo":[],"Rentabilidade":[]}
 
     valores = data["ValorVenda"]
     valores = valores.values.tolist()
+    custos = data["preço Custo"]
+    custos = custos.values.tolist()
     for v in range(len(valores)):
         valores[v] = float(valores[v].replace(",", "."))
+        custos[v] = float(custos[v].replace(",","."))
+        dic["Rentabilidade"].append(valores[v]-custos[v])
 
     dic["ValorVenda"] = valores
+    dic["Custo"] = custos
     dats = pd.DataFrame(dic)
     #dats = dats.sort_values(['ValorVenda','Produto'], ascending=False)
-    produtos = set()
-    for p in range(len(dats["Produto"])):
-        prod = dic["Produto"][p]
-        produtos.add(prod)
-
     valVendas = []
-    for prod in produtos:
-        datP = dats.loc[dats["Produto"] == prod]
-        lista = datP["ValorVenda"].values.tolist()
-        soma = sum(lista)
-        valVendas.append(soma)
-
-    dataFrame = pd.DataFrame({"Produto":list(produtos),"Valor Vendas":valVendas})
-    dataFrame = dataFrame.sort_values(['Valor Vendas','Produto'], ascending=False)
-
-    st.write("Ranking Geral")
-    sns.barplot(data = dataFrame, x="Valor Vendas", y="Produto", estimator = np.sum, palette="tab10")
-    st.pyplot()
-    st.write(dataFrame)
-
     loj = ["R1296", "BA7783", "JP8825", "RG7742", "AL1312", "GA7751", "JB6325"]
+    st.write("Ranking Rentáveis (Geral)")
+    #
+    pset = set()
+    produtos = data["Produto"]
+    produtos = produtos.values.tolist()
+    for k in range(len(produtos)):
+        pset.add(produtos[k])
+
+    rent = {"Produto":[] , "Rentabilidade":[]}
+    for prod in pset:
+        df = dats.loc[dats["Produto"] == prod]
+        soma = df["Rentabilidade"].sum()
+        rent["Produto"].append(prod)
+        rent["Rentabilidade"].append(soma)
+
+    rentDic = rent
+    rent = pd.DataFrame(rent)
+    rent = rent.sort_values(['Rentabilidade','Produto'], ascending=False)
+
+    sns.barplot(data = rent, x="Rentabilidade", y="Produto", estimator = np.sum, palette="Set1")
+    plt.title("Ranking Rentáveis (Geral)")
+    st.pyplot()
+    st.write(rent)
+    #
+
     for loja in loj:
-        datL = dats.loc[dats["Loja"] == loja]
+        datP = dats.loc[dats["Loja"] == loja]
+        st.write("Ranking Rentáveis Loja -> "+str(loja))
 
-        valVendas = []
-        for prod in produtos:
-            datP = datL.loc[datL["Produto"] == prod]
-            lista = datP["ValorVenda"].values.tolist()
-            soma = sum(lista)
-            valVendas.append(soma)
+        rent = {"Produto":[] , "Rentabilidade":[]}
+        for prod in pset:
+            df = datP.loc[datP["Produto"] == prod]
+            soma = df["Rentabilidade"].sum()
+            rent["Produto"].append(prod)
+            rent["Rentabilidade"].append(soma)
 
-        st.write("Raanking Loja -> ",str(loja))
-        dataFrame = pd.DataFrame({"Produto":list(produtos),"Valor Vendas":valVendas})
-        dataFrame = dataFrame.sort_values(['Valor Vendas','Produto'], ascending=False)
-        sns.barplot(data = dataFrame, x="Valor Vendas", y="Produto", estimator = np.sum, palette="tab10")
-        plt.title("Ranking Loja -> "+str(loja))
+        rentDic = rent
+        rent = pd.DataFrame(rent)
+        rent = rent.sort_values(['Rentabilidade','Produto'], ascending=False)
+
+        sns.barplot(data = rent, x="Rentabilidade", y="Produto", estimator = np.sum, palette="pastel")
+        plt.title("Ranking Rentáveis Loja --> "+str(loja))
         st.pyplot()
-        st.write(dataFrame)
+        st.write(rent)
+
+        ##sns.barplot(data = datP, x="Rentabilidade", y="Produto", estimator = np.sum, palette="pastel")
+        ##plt.title("Ranking Rentáveis Loja -> "+str(loja))
+        ##st.pyplot()
+
+
 ###################
 st.set_option('deprecation.showPyplotGlobalUse', False)
 # carregar os dados
